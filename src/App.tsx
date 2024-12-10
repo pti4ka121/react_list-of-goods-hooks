@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import 'bulma/css/bulma.css';
 import './App.scss';
 
@@ -21,23 +21,17 @@ export enum SortType {
   DEFAULT = '',
 }
 
-interface AppState {
-  isReversed: boolean;
-  sortType: SortType;
-}
+const App: React.FC = () => {
+  const [isReversed, setIsReversed] = useState(false); // Стан для інверсії списку
+  const [sortType, setSortType] = useState<SortType>(SortType.DEFAULT); // Стан для типу сортування
 
-export class App extends React.Component<{}, AppState> {
-  state: AppState = {
-    isReversed: false,
-    sortType: SortType.DEFAULT,
-  };
-
-  getSortedGoods = (goods: string[]): string[] => {
-    const { sortType, isReversed } = this.state;
-    const sortedGoods = [...goods];
+  // Отримання відсортованого списку
+  const getSortedGoods = (): string[] => {
+    const sortedGoods = [...goodsFromServer];
 
     if (sortType === SortType.ALPHABET) {
-      sortedGoods.sort();
+      // Використання localeCompare для точного сортування
+      sortedGoods.sort((a, b) => a.localeCompare(b));
     } else if (sortType === SortType.LENGTH) {
       sortedGoods.sort((a, b) => a.length - b.length);
     }
@@ -49,75 +43,65 @@ export class App extends React.Component<{}, AppState> {
     return sortedGoods;
   };
 
-  sortByAlphabet = (): void => {
-    this.setState({ sortType: SortType.ALPHABET });
-  };
+  const sortByAlphabet = () => setSortType(SortType.ALPHABET);
+  const sortByLength = () => setSortType(SortType.LENGTH);
+  const reverseGoods = () => setIsReversed(prev => !prev);
+  const resetGoods = () => {
+    setSortType(SortType.DEFAULT);
+    setIsReversed(false);
+  }; // Скидає стан до початкового
 
-  sortByLength = (): void => {
-    this.setState({ sortType: SortType.LENGTH });
-  };
+  // Відсортований список
+  const goods = getSortedGoods();
+  const isChanged = sortType !== SortType.DEFAULT || isReversed; // Визначення, чи було змінено стан
 
-  reverseGoods = (): void => {
-    this.setState(prevState => ({ isReversed: !prevState.isReversed }));
-  };
+  return (
+    <div className="section content">
+      <div className="buttons">
+        <button
+          type="button"
+          className={`button is-info ${sortType === SortType.ALPHABET ? '' : 'is-light'}`}
+          onClick={sortByAlphabet}
+        >
+          Sort alphabetically
+        </button>
 
-  resetGoods = (): void => {
-    this.setState({ sortType: SortType.DEFAULT, isReversed: false });
-  };
+        <button
+          type="button"
+          className={`button is-success ${sortType === SortType.LENGTH ? '' : 'is-light'}`}
+          onClick={sortByLength}
+        >
+          Sort by length
+        </button>
 
-  render() {
-    const goods = this.getSortedGoods(goodsFromServer);
-    const { sortType, isReversed } = this.state;
-    const isChanged = sortType !== SortType.DEFAULT || isReversed;
+        <button
+          type="button"
+          className={`button is-warning ${isReversed ? '' : 'is-light'}`}
+          onClick={reverseGoods}
+        >
+          Reverse
+        </button>
 
-    return (
-      <div className="section content">
-        <div className="buttons">
+        {isChanged && (
           <button
             type="button"
-            className={`button is-info ${sortType === SortType.ALPHABET ? '' : 'is-light'}`}
-            onClick={this.sortByAlphabet}
+            className="button is-danger"
+            onClick={resetGoods}
           >
-            Sort alphabetically
+            Reset
           </button>
-
-          <button
-            type="button"
-            className={`button is-success ${sortType === SortType.LENGTH ? '' : 'is-light'}`}
-            onClick={this.sortByLength}
-          >
-            Sort by length
-          </button>
-
-          <button
-            type="button"
-            className={`button is-warning ${isReversed ? '' : 'is-light'}`}
-            onClick={this.reverseGoods}
-          >
-            Reverse
-          </button>
-
-          {isChanged && (
-            <button
-              type="button"
-              className="button is-danger"
-              onClick={this.resetGoods}
-            >
-              Reset
-            </button>
-          )}
-        </div>
-
-        <ul>
-          {goods.map(good => (
-            <li key={good} data-cy="Good">
-              {good}
-            </li>
-          ))}
-        </ul>
+        )}
       </div>
-    );
-  }
-}
+
+      <ul>
+        {goods.map(good => (
+          <li key={good} data-cy="Good">
+            {good}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
 export default App;
